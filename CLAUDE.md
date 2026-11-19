@@ -30,8 +30,9 @@ CMake FetchContent pinned to a git tag and link `ivandaw::engine_core`. Plan and
 
 ```sh
 cmake -S . -B build && cmake --build build --config Release && ctest --test-dir build -C Release --output-on-failure
-cd apps/playground && pnpm i && pnpm build:wasm && pnpm test && pnpm dev   # needs emsdk + ninja
+cd apps/playground && pnpm i && pnpm build:wasm && pnpm test && pnpm dev   # needs emsdk + ninja; serves http://127.0.0.1:5290
 ```
 
+- The playground uses default browser styling and one edit field per params property; keep it that way.
 - A new params field: add it to the struct, to `playground/abi.cpp` and to `apps/playground/src/fields.ts`.
 - Commit straight to `main`. Tag `vX.Y.Z` for every library change plugins need; CI must be green first.

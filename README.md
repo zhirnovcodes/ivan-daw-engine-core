@@ -71,7 +71,11 @@ cd apps/playground
 pnpm i
 pnpm build:wasm   # → public/engine_core_playground.wasm
 pnpm test         # wasm smoke test in Node
-pnpm dev          # open the printed URL: index, delay, reverb, filter, unison
+pnpm dev          # opens http://127.0.0.1:5290/ : index, delay, reverb, filter, unison
 ```
+
+The address is fixed and bound to 127.0.0.1 because `localhost:5173` and `:5180` are the IvanDAW and
+Beatality dev servers. The pages use the browser's default look: one number field or dropdown per params
+property, the breakbeat sample as the default input.
 
 See [docs/plan.md](docs/plan.md) for the roadmap, the test plan and the design decisions.

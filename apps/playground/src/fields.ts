@@ -1,97 +1,92 @@
-// The parameter schema of each effect. `index` is the field number in playground/abi.cpp: keep them in sync.
+// Every property of each params struct, as edited on the page.
+// `index` is the field number in playground/abi.cpp: keep them in sync.
+// Names, ranges and defaults match include/ivandaw/fx/*.h.
 
-export interface RangeField {
-    kind: 'range'
-    id: string
-    label: string
+export interface NumberField {
+    kind: 'number'
+    id: string // the C++ struct member
     index: number
     min: number
     max: number
     step: number
-    value: number
-    scale?: 'log'
-    format?: (v: number) => string
+    value: number // the C++ default
+    unit: string
+    hint?: (v: number) => string // extra read-out next to the field
 }
 
 export interface ChoiceField {
     kind: 'choice'
     id: string
-    label: string
     index: number
-    choices: string[]
+    choices: string[] // the C++ enum values, in order
     value: number
 }
 
-export type Field = RangeField | ChoiceField
+export type Field = NumberField | ChoiceField
 
 export interface EffectDef {
     kind: number // 0 delay, 1 reverb, 2 filter, 3 unison
     title: string
-    blurb: string
+    struct: string
     fields: Field[]
 }
 
-const pct = (v: number) => `${Math.round(v * 100)} %`
-const sec = (v: number) => (v < 1 ? `${Math.round(v * 1000)} ms` : `${v.toFixed(2)} s`)
-
 export const cutoffHz = (position: number) => 20 * 1000 ** Math.min(1, Math.max(0, position))
-const hz = (p: number) => {
-    const f = cutoffHz(p)
-    return f < 1000 ? `${Math.round(f)} Hz` : `${(f / 1000).toFixed(2)} kHz`
-}
+const hz = (p: number) => `= ${Math.round(cutoffHz(p))} Hz`
 
 export const DELAY: EffectDef = {
     kind: 0,
     title: 'Delay',
-    blurb: 'Stereo feedback delay. Time changes glide like tape. Feedback is capped at 95 %.',
+    struct: 'DelayParams',
     fields: [
-        { kind: 'range', id: 'delayTime', label: 'Time', index: 0, min: 0.01, max: 2, step: 0.001, value: 0.261, format: sec },
-        { kind: 'range', id: 'feedback', label: 'Feedback', index: 1, min: 0, max: 0.95, step: 0.01, value: 0.45, format: pct },
-        { kind: 'range', id: 'mix', label: 'Mix', index: 2, min: 0, max: 1, step: 0.01, value: 0.4, format: pct },
+        { kind: 'number', id: 'delayTime', index: 0, min: 0, max: 4, step: 0.001, value: 0.25, unit: 's' },
+        { kind: 'number', id: 'feedback', index: 1, min: 0, max: 1, step: 0.01, value: 0.4, unit: '(capped at 0.95)' },
+        { kind: 'number', id: 'mix', index: 2, min: 0, max: 1, step: 0.01, value: 0.5, unit: '(0 dry, 1 wet)' },
     ],
 }
 
 export const REVERB: EffectDef = {
     kind: 1,
     title: 'Reverb',
-    blurb: 'Freeverb tank. Decay is the RT60 tail time; feedback 0 leaves only the first reflections.',
+    struct: 'ReverbParams',
     fields: [
-        { kind: 'range', id: 'decay', label: 'Decay', index: 0, min: 0.1, max: 20, step: 0.01, value: 2.5, scale: 'log', format: sec },
-        { kind: 'range', id: 'feedback', label: 'Feedback', index: 1, min: 0, max: 1, step: 0.01, value: 1, format: pct },
-        { kind: 'range', id: 'mix', label: 'Mix', index: 2, min: 0, max: 1, step: 0.01, value: 0.3, format: pct },
+        { kind: 'number', id: 'decay', index: 0, min: 0.05, max: 30, step: 0.01, value: 2, unit: 's (RT60)' },
+        { kind: 'number', id: 'feedback', index: 1, min: 0, max: 1, step: 0.01, value: 1, unit: '' },
+        { kind: 'number', id: 'mix', index: 2, min: 0, max: 1, step: 0.01, value: 0.3, unit: '(0 dry, 1 wet)' },
     ],
 }
 
 export const FILTER: EffectDef = {
     kind: 2,
     title: 'Filter',
-    blurb: 'State-variable filter. Morph sweeps low-pass → band-pass → high-pass along the position axis.',
+    struct: 'FilterParams',
     fields: [
-        { kind: 'choice', id: 'type', label: 'Type', index: 0, choices: ['Low', 'High', 'Band', 'Morph'], value: 3 },
-        { kind: 'range', id: 'filterPosition', label: 'Position', index: 1, min: 0, max: 1, step: 0.001, value: 0.5, format: hz },
-        { kind: 'range', id: 'res', label: 'Resonance', index: 2, min: 0, max: 1, step: 0.01, value: 0.3, format: pct },
-        { kind: 'range', id: 'morphLow', label: 'Morph low', index: 3, min: 0, max: 1, step: 0.001, value: 0.25, format: hz },
-        { kind: 'range', id: 'morphHigh', label: 'Morph high', index: 4, min: 0, max: 1, step: 0.001, value: 0.75, format: hz },
-        { kind: 'choice', id: 'slope', label: 'Slope', index: 5, choices: ['12 dB/oct', '24 dB/oct'], value: 0 },
-        { kind: 'range', id: 'mix', label: 'Mix', index: 6, min: 0, max: 1, step: 0.01, value: 1, format: pct },
+        { kind: 'choice', id: 'type', index: 0, choices: ['Low', 'High', 'Band', 'Morph'], value: 0 },
+        { kind: 'number', id: 'filterPosition', index: 1, min: 0, max: 1, step: 0.001, value: 1, unit: '', hint: hz },
+        { kind: 'number', id: 'res', index: 2, min: 0, max: 1, step: 0.01, value: 0, unit: '' },
+        { kind: 'number', id: 'morphLow', index: 3, min: 0, max: 1, step: 0.001, value: 0.25, unit: '', hint: hz },
+        { kind: 'number', id: 'morphHigh', index: 4, min: 0, max: 1, step: 0.001, value: 0.75, unit: '', hint: hz },
+        { kind: 'choice', id: 'slope', index: 5, choices: ['Db12', 'Db24'], value: 0 },
+        { kind: 'number', id: 'mix', index: 6, min: 0, max: 1, step: 0.01, value: 1, unit: '(0 dry, 1 wet)' },
     ],
 }
 
+// UnisonParams::param changes meaning with the type.
 export const UNISON_PARAM = [
-    { label: 'Detune', max: 100, step: 0.1, value: 20, format: (v: number) => `±${v.toFixed(1)} cents` },
-    { label: 'Depth', max: 10, step: 0.01, value: 3, format: (v: number) => `${v.toFixed(2)} ms` },
-    { label: 'Offset', max: 50, step: 0.1, value: 20, format: (v: number) => `0 – ${v.toFixed(1)} ms` },
+    { max: 100, step: 0.1, unit: 'cents (Detune)' },
+    { max: 10, step: 0.01, unit: 'ms depth (Chorus)' },
+    { max: 50, step: 0.1, unit: 'ms offset (Spread)' },
 ]
 
 export const UNISON: EffectDef = {
     kind: 3,
     title: 'Unison',
-    blurb: 'Plays the input several times, panned left to right. The third slider changes meaning with the type.',
+    struct: 'UnisonParams',
     fields: [
-        { kind: 'choice', id: 'type', label: 'Type', index: 0, choices: ['Detune', 'Chorus', 'Spread'], value: 0 },
-        { kind: 'range', id: 'voices', label: 'Voices', index: 1, min: 1, max: 8, step: 1, value: 5, format: (v) => `${v}` },
-        { kind: 'range', id: 'param', label: UNISON_PARAM[0].label, index: 2, min: 0, max: 100, step: 0.1, value: 20, format: UNISON_PARAM[0].format },
-        { kind: 'range', id: 'mix', label: 'Mix', index: 3, min: 0, max: 1, step: 0.01, value: 1, format: pct },
+        { kind: 'choice', id: 'type', index: 0, choices: ['Detune', 'Chorus', 'Spread'], value: 0 },
+        { kind: 'number', id: 'voices', index: 1, min: 1, max: 8, step: 1, value: 4, unit: '' },
+        { kind: 'number', id: 'param', index: 2, min: 0, max: 100, step: 0.1, value: 15, unit: UNISON_PARAM[0].unit },
+        { kind: 'number', id: 'mix', index: 3, min: 0, max: 1, step: 0.01, value: 1, unit: '(0 dry, 1 wet)' },
     ],
 }
 

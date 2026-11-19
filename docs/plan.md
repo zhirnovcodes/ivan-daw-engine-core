@@ -89,7 +89,8 @@ apps/playground/
   public/fx-worklet.js    AudioWorkletProcessor: owns the wasm instance (plain JS, served as-is)
   public/samples/         breakbeat-115bpm.wav
   src/fields.ts           param schema per effect; field indices match playground/abi.cpp
-  src/rig.ts              shared: nav, input picker, play, bypass, Reset(), fire click, scope, spectrum
+  src/rig.ts              shared: nav, input picker, play, bypass, Reset(), fire click, params table, scope, spectrum
+  src/plot.ts             fixed canvas colours (the pages have no stylesheet)
   src/filterResponse.ts   SVF magnitude response + MorphMix, same formulas as src/Filter.cpp
   src/pages/<effect>.ts   per-page extras (filter response + morph weights, unison voice map)
   scripts/build-wasm.mjs  emcmake + ninja → public/engine_core_playground.wasm (git-ignored)
@@ -97,6 +98,8 @@ apps/playground/
 playground/abi.cpp        C ABI: fxp_create/destroy/set/bypass/reset/process/alloc/free
 ```
 
+- Served at http://127.0.0.1:5290 (own port; 5173/5180 belong to IvanDAW and Beatality). Default browser
+  look, no stylesheet; every params property is a number field or an enum dropdown, defaults = the C++ defaults.
 - Inputs: breakbeat sample, saw chord, clicks, white noise, audio file, microphone, silence (hear the tail).
 - Checked: `pnpm build` green, wasm smoke test green, pages render in headless Chrome, and an offline render
   through the real worklet puts delay echoes at 100/200/300 ms with gains 1/0.5/0.25.
