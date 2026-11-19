@@ -1,6 +1,6 @@
 # ivan-daw-engine-core: development and test plan
 
-Status on 2026-11-19: phase 1 is done (four effects + native tests, green on MSVC, compiles clean with em++).
+Status on 2026-11-19: phases 1–3 done. `v0.1.0` is tagged; the playground runs locally; CI is set up.
 
 ## Answers to the open questions
 
@@ -79,39 +79,34 @@ then builds the library as part of the plugin's build.
 - [x] Test sample: `apps/playground/public/samples/breakbeat-115bpm.wav`
 - [x] Compiles clean with `em++ -fno-exceptions -fno-rtti -Wall -Wextra`
 
-### Phase 2: playground (localhost page per effect)
+### Phase 2: playground (done)
 
 ```
 apps/playground/
-  package.json            @ivandaw-engine-core/playground; scripts: dev, build:wasm, typecheck
+  package.json            @ivandaw-engine-core/playground: build:wasm, dev, typecheck, build, test
   vite.config.ts          multi-page: index + one page per effect
-  index.html              links to each effect
-  delay.html, reverb.html, filter.html, unison.html
-  src/worklet.ts          AudioWorkletProcessor: owns the wasm instance, 128-frame blocks
-  src/rig.ts              shared: input picker, bypass A/B, level meter, scope, spectrum
-  src/pages/<effect>.ts   the param controls of one effect
-playground/abi.cpp        C ABI over the effects → engine_core_playground.wasm
+  index.html, delay.html, reverb.html, filter.html, unison.html
+  public/fx-worklet.js    AudioWorkletProcessor: owns the wasm instance (plain JS, served as-is)
+  public/samples/         breakbeat-115bpm.wav
+  src/fields.ts           param schema per effect; field indices match playground/abi.cpp
+  src/rig.ts              shared: nav, input picker, play, bypass, Reset(), fire click, scope, spectrum
+  src/filterResponse.ts   SVF magnitude response + MorphMix, same formulas as src/Filter.cpp
+  src/pages/<effect>.ts   per-page extras (filter response + morph weights, unison voice map)
+  scripts/build-wasm.mjs  emcmake + ninja → public/engine_core_playground.wasm (git-ignored)
+  scripts/wasm-smoke.mjs  Node: every effect through the wasm ABI, delay echo timing, mix 0 is dry
+playground/abi.cpp        C ABI: fxp_create/destroy/set/bypass/reset/process/alloc/free
 ```
 
-- **C ABI** (one generic shape so adding an effect touches no glue):
-  `fxp_create(kind, rate)`, `fxp_destroy`, `fxp_set(inst, field, value)`, `fxp_reset(inst)`,
-  `fxp_process(inst, l*, r*, frames)`, plus `fxp_alloc` / `fxp_free`. Standalone wasm, no emscripten glue,
-  same link flags as Beatality's `daw-plugin.yml`.
-- **CMake**: `if(EMSCRIPTEN AND PROJECT_IS_TOP_LEVEL)` adds the `engine_core_playground` target.
-- **Inputs** on every page: drum loop, sustained saw chord, single clicks (impulse every second), pink noise,
-  drag-and-drop audio file, microphone.
-- **Per page**: sliders for every param field, a Reset button, bypass toggle.
-  Filter page: draws the magnitude response (computed in TS from the same SVF formulas) and the `MorphMix`
-  weights under the position slider. Reverb/Delay pages: a "fire impulse" button and a decaying-tail plot.
-  Unison page: voice pan/offset diagram.
-- **Done when** `pnpm dev` serves all five pages and each effect can be heard and A/B'd on every input.
+- Inputs: breakbeat sample, saw chord, clicks, white noise, audio file, microphone, silence (hear the tail).
+- Checked: `pnpm build` green, wasm smoke test green, pages render in headless Chrome, and an offline render
+  through the real worklet puts delay echoes at 100/200/300 ms with gains 1/0.5/0.25.
 
 ### Phase 3: CI + first tag
 
-- `.github/workflows/ci.yml`: on push/PR, Linux (gcc + clang) and Windows (MSVC) build + `ctest`,
-  plus an emscripten job that builds the library and the playground wasm.
-- Tag `v0.1.0` after Ivan reviews the decisions above.
-- Optional: publish the built playground to GitHub Pages so it can be tried without cloning.
+- [x] Tag `v0.1.0` (library only; playground and CI are outside the library).
+- [x] `.github/workflows/ci.yml`: gcc, clang, MSVC build + `ctest`; emscripten job builds the playground wasm,
+  runs the smoke test, builds the site and uploads it as an artifact.
+- [ ] Optional: publish the built playground to GitHub Pages so it can be tried without cloning.
 
 ### Phase 4: first consumer
 

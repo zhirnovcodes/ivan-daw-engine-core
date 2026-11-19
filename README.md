@@ -62,4 +62,16 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
+### Playground (localhost page per effect)
+
+Needs emsdk (`emcmake` on PATH) and Ninja.
+
+```sh
+cd apps/playground
+pnpm i
+pnpm build:wasm   # → public/engine_core_playground.wasm
+pnpm test         # wasm smoke test in Node
+pnpm dev          # open the printed URL: index, delay, reverb, filter, unison
+```
+
 See [docs/plan.md](docs/plan.md) for the roadmap, the test plan and the design decisions.

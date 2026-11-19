@@ -28,6 +28,25 @@ target_include_directories(ivandaw_engine_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR
 target_compile_features(ivandaw_engine_core PUBLIC cxx_std_20)
 ivandaw_core_flags(ivandaw_engine_core)
 
+# The playground's wasm: only for this repo's own emscripten build, never for a consumer.
+# Writes apps/playground/public/engine_core_playground.wasm.
+if(EMSCRIPTEN AND PROJECT_IS_TOP_LEVEL)
+    add_executable(engine_core_playground playground/abi.cpp)
+    target_link_libraries(engine_core_playground PRIVATE ivandaw_engine_core)
+    ivandaw_core_flags(engine_core_playground)
+    set_target_properties(engine_core_playground PROPERTIES
+        SUFFIX ".wasm"
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/apps/playground/public)
+    target_link_options(engine_core_playground PRIVATE
+        -O2
+        --no-entry
+        -sSTANDALONE_WASM
+        -sALLOW_MEMORY_GROWTH
+        -sFILESYSTEM=0
+        -sEXPORTED_FUNCTIONS=_fxp_alloc,_fxp_free,_fxp_create,_fxp_destroy,_fxp_set,_fxp_bypass,_fxp_reset,_fxp_process
+    )
+endif()
+
 if(IVANDAW_ENGINE_CORE_TESTS AND NOT EMSCRIPTEN)
     enable_testing()
     foreach(name delay reverb filter unison)

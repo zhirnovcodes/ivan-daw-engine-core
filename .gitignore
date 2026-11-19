@@ -4,3 +4,4 @@ dist/
 .emscripten
 .vs/
 .vscode/
+apps/playground/public/engine_core_playground.wasm

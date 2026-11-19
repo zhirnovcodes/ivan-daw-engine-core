@@ -1,0 +1,22 @@
+{
+  "name": "@ivandaw-engine-core/playground",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Localhost test pages for the engine-core effects. Not part of the library; plugins never depend on it.",
+  "type": "module",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:wasm": "node scripts/build-wasm.mjs",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "test": "node scripts/wasm-smoke.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  }
+}

@@ -1,0 +1,72 @@
+name: CI
+
+# Native tests on gcc, clang and MSVC; the library and playground wasm with emscripten,
+# then the wasm smoke test and the playground build.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, cxx: g++ }
+          - { os: ubuntu-24.04, cxx: clang++ }
+          - { os: windows-2022, cxx: cl }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        shell: bash
+        run: |
+          if [ "${{ matrix.cxx }}" = "cl" ]; then
+            cmake -S . -B build
+          else
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          fi
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+
+  wasm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          # Same version as Beatality's wasm build.
+          version: 6.0.12
+          actions-cache-folder: emsdk-cache
+      - name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/playground/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: apps/playground/pnpm-lock.yaml
+      - name: Install
+        working-directory: apps/playground
+        run: pnpm install --frozen-lockfile
+      - name: Build wasm
+        working-directory: apps/playground
+        run: pnpm build:wasm
+      - name: Wasm smoke test
+        working-directory: apps/playground
+        run: pnpm test
+      - name: Build playground
+        working-directory: apps/playground
+        run: pnpm build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playground
+          path: apps/playground/dist
